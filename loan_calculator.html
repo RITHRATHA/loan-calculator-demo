@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<title>គណនាតារាងកម្ចី</title>
+<style>
+  body { font-family: 'Khmer OS Battambang', Arial, sans-serif; background: #f4f6f9; padding: 20px; }
+  .box { max-width: 920px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  h2 { text-align: center; color: #1a56db; }
+  .row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
+  .col { flex: 1; min-width: 180px; }
+  label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+  input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; box-sizing: border-box; }
+  .btns { text-align: center; margin: 15px 0; }
+  button { padding: 10px 20px; font-size: 15px; border: none; border-radius: 4px; cursor: pointer; margin: 0 5px; font-weight: bold; }
+  #calcBtn { background: #1a56db; color: #fff; }
+  #calcBtn:hover { background: #1e40af; }
+  #clearBtn { background: #e5e7eb; color: #111; }
+  .summary { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; background: #eff6ff; padding: 12px; border-radius: 6px; margin-bottom: 15px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: right; font-size: 14px; }
+  th { background: #1a56db; color: #fff; text-align: center; }
+  td:nth-child(1), td:nth-child(2) { text-align: center; }
+  tr:nth-child(even) { background-color: #f9fafb; }
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h2>តារាងគណនាប្រាក់កម្ចី</h2>
+
+  <div class="row">
+    <div class="col">
+      <label>ទឹកប្រាក់កម្ចី ($)</label>
+      <input type="number" id="loanAmount" value="5000">
+    </div>
+    <div class="col">
+      <label>អត្រាការប្រាក់ / ខែ (%)</label>
+      <input type="number" id="loanRate" value="1.5" step="0.01">
+    </div>
+    <div class="col">
+      <label>រយៈពេល (ខែ)</label>
+      <input type="number" id="loanMonths" value="12">
+    </div>
+    <div class="col">
+      <label>ថ្ងៃ ខែ ឆ្នាំ ខ្ចី</label>
+      <input type="date" id="startDate">
+    </div>
+  </div>
+
+  <div class="btns">
+    <button id="calcBtn" onclick="runCalc()">គណនា</button>
+    <button id="clearBtn" onclick="runClear()">សម្អាត</button>
+  </div>
+
+  <div class="summary">
+    <div>បង់ប្រចាំខែ: <strong id="outMonthly">$0.00</strong></div>
+    <div>ការប្រាក់សរុប: <strong id="outInterest">$0.00</strong></div>
+    <div>សរុបត្រូវសង: <strong id="outTotal">$0.00</strong></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ខែទី</th>
+        <th>ថ្ងៃ ខែ ឆ្នាំ បង់ប្រាក់</th>
+        <th>បង់ប្រចាំខែ ($)</th>
+        <th>ប្រាក់ដើម ($)</th>
+        <th>ការប្រាក់ ($)</th>
+        <th>ដើមនៅសល់ ($)</th>
+      </tr>
+    </thead>
+    <tbody id="outTable"></tbody>
+  </table>
+</div>
+
+<script>
+// កំណត់ថ្ងៃបច្ចុប្បន្នជា Default ពេលបើកទំព័រដំបូង
+document.getElementById("startDate").valueAsDate = new Date();
+
+// មុខងារបំប្លែងទម្រង់ថ្ងៃទៅជា ថ្ងៃ/ខែ/ឆ្នាំ (DD/MM/YYYY)
+function formatDate(dateObj) {
+  var day = String(dateObj.getDate()).padStart(2, '0');
+  var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  var year = dateObj.getFullYear();
+  return day + "/" + month + "/" + year;
+}
+
+function runCalc() {
+  var p = parseFloat(document.getElementById("loanAmount").value);
+  var r = parseFloat(document.getElementById("loanRate").value) / 100;
+  var n = parseInt(document.getElementById("loanMonths").value);
+  var startDateVal = document.getElementById("startDate").value;
+
+  if (!p || p <= 0 || !n || n <= 0 || isNaN(r) || !startDateVal) {
+    alert("សូមបញ្ចូលទិន្នន័យ និងថ្ងៃ ខែ ឆ្នាំ ឱ្យបានត្រឹមត្រូវ!");
+    return;
+  }
+
+  var pay = 0;
+  if (r === 0) {
+    pay = p / n;
+  } else {
+    pay = (p * r) / (1 - Math.pow(1 + r, -n));
+  }
+
+  var totalPay = pay * n;
+  var totalInt = totalPay - p;
+
+  document.getElementById("outMonthly").innerHTML = "$" + pay.toFixed(2);
+  document.getElementById("outInterest").innerHTML = "$" + totalInt.toFixed(2);
+  document.getElementById("outTotal").innerHTML = "$" + totalPay.toFixed(2);
+
+  // បំបែកថ្ងៃ ខែ ឆ្នាំ ចាប់ផ្តើម
+  var parts = startDateVal.split("-");
+  var startYear = parseInt(parts[0], 10);
+  var startMonth = parseInt(parts[1], 10) - 1;
+  var startDay = parseInt(parts[2], 10);
+
+  var bal = p;
+  var html = "";
+
+  for (var i = 1; i <= n; i++) {
+    var interest = bal * r;
+    var principal = pay - interest;
+    bal = bal - principal;
+    if (bal < 0.01) bal = 0;
+
+    // គណនាកាលបរិច្ឆេទបង់ប្រាក់សម្រាប់ខែទី i (បូកថែម i ខែ)
+    var payDate = new Date(startYear, startMonth + i, startDay);
+    // ការពារករណីខែខ្លះមានត្រឹម 28, 29 ឬ 30 ថ្ងៃ (កុំឱ្យលោតទៅខែបន្ទាប់)
+    if (payDate.getDate() !== startDay) {
+      payDate = new Date(startYear, startMonth + i + 1, 0);
+    }
+
+    html += "<tr>" +
+      "<td>" + i + "</td>" +
+      "<td>" + formatDate(payDate) + "</td>" +
+      "<td>" + pay.toFixed(2) + "</td>" +
+      "<td>" + principal.toFixed(2) + "</td>" +
+      "<td>" + interest.toFixed(2) + "</td>" +
+      "<td>" + bal.toFixed(2) + "</td>" +
+      "</tr>";
+  }
+  document.getElementById("outTable").innerHTML = html;
+}
+
+function runClear() {
+  document.getElementById("loanAmount").value = "";
+  document.getElementById("loanRate").value = "";
+  document.getElementById("loanMonths").value = "";
+  document.getElementById("startDate").valueAsDate = new Date();
+  document.getElementById("outMonthly").innerHTML = "$0.00";
+  document.getElementById("outInterest").innerHTML = "$0.00";
+  document.getElementById("outTotal").innerHTML = "$0.00";
+  document.getElementById("outTable").innerHTML = "";
+}
+
+runCalc();
+</script>
+
+</body>
+</html>
